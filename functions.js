@@ -41,7 +41,12 @@
 	'cunt',
 	's.o.b',
 	'fart',
-	'motherfucker'
+	'motherfucker',
+	'masturbation',
+	'blowjob',
+	'blowjobs',
+	'handjob',
+	'handjobs'
 	].join("|");
 	var regExp = new RegExp('\\b('+badWords+')\\b', "gi");  
 
