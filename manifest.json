@@ -1,21 +1,27 @@
 {
   "manifest_version": 2,
 
-  "name": "Parents controll",
+  "name": "WebCensor",
   "description": "This extension allow to block obscenities",
   "version": "1.0",
   "browser_action": {
-    "default_icon": "icon.png",
+    "default_icon": "icon16.png",
     "default_popup": "popup.html"
   },
   "permissions": [
     "tabs", "<all_urls>"
   ],
+  "icons": { 
+    "16": "icon16.png",
+    "48": "icon48.png",
+    "128": "icon128.png" 
+  },
   "content_scripts": [
     {
       "matches":["<all_urls>"],
       "js":["functions.js"]
     }
   ],
+  "options_page": "options.html",
   "web_accessible_resources": ["eng.json"]
 }

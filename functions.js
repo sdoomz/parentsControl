@@ -1,7 +1,9 @@
 (function() {
 	var LANG = 'eng';
-	var DATA = null;
-	function getXmlHttp(){
+	var jsonWorker = {};
+
+	jsonWorker.LANG = "eng";
+	jsonWorker.getXmlHttp = function() { 
 		var xmlhttp;
 		try {
 		    xmlhttp = new ActiveXObject("Msxml2.XMLHTTP");
@@ -16,21 +18,31 @@
 		   xmlhttp = new XMLHttpRequest();
 		}
 		return xmlhttp;
+	};	
+
+	jsonWorker.sendRequest = function() { 
+		var xmlhttp = jsonWorker.getXmlHttp();	
+		xmlhttp.open('GET', chrome.extension.getURL(jsonWorker.LANG+'.json'), true);
+		xmlhttp.onreadystatechange = function() {
+		  if (xmlhttp.readyState == 4) {
+		    if(xmlhttp.status == 200) {
+		    	var data = JSON.parse(xmlhttp.responseText);    			    	
+		    	localStorage.webCensorData = data.words.join("|");	    	
+		    	changeWords();
+		    }
+		  }
+		};
+		xmlhttp.send(null);
+	};
+	
+	if(typeof window.localStorage.webCensorData == 'string' && window.localStorage.webCensorData != '') {
+		changeWords();
+	} else {
+		jsonWorker.sendRequest();
 	}
 
-	var xmlhttp = getXmlHttp();	
-	xmlhttp.open('GET', chrome.extension.getURL(LANG+'.json'), true);
-	xmlhttp.onreadystatechange = function() {
-	  if (xmlhttp.readyState == 4) {
-	    if(xmlhttp.status == 200) {
-	    	DATA = JSON.parse(xmlhttp.responseText);
-	    	changeWords(DATA.words.join("|")); 
-	    }
-	  }
-	};
-	xmlhttp.send(null);
-
-	function changeWords(badWords) {
+	function changeWords() {
+		var badWords = localStorage.webCensorData;		
 		var regExp = new RegExp('\\b('+badWords+')\\b', "gi");  
 		var walker = document.createTreeWalker(
 		    document.body, 
@@ -40,9 +52,22 @@
 		);
 		var node;
 
-		while(node = walker.nextNode()) {
-			console.log(node);
+		while(node = walker.nextNode()) {			
 		    node.nodeValue = node.nodeValue.replace(regExp, '****');
 		}		
+	}
+	
+	window.addEventListener('DOMContentLoaded', addDomListener, false );
+
+	function addDomListener() { 		
+		document.addEventListener("DOMSubtreeModified", function(e) {
+			var badWords = localStorage.webCensorData;
+			var regExp = new RegExp('\\b('+badWords+')\\b', "gi");		
+		 	
+		 	if(typeof e.target.innerText != "undefined" && (e.target.childElementCount == 0 || e.target.nodeType  == 3) ) {
+		    	e.target.innerText = e.target.innerText.replace(regExp, '****');
+		  	}
+		}, false);		
+	
 	}
 })();
