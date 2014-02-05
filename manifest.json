@@ -9,7 +9,7 @@
     "default_popup": "popup.html"
   },
   "permissions": [
-    "tabs", "<all_urls>"
+    "tabs", "<all_urls>","storage","browsingData"
   ],
   "icons": { 
     "16": "icon16.png",
@@ -22,6 +22,10 @@
       "js":["functions.js"]
     }
   ],
+  "background": {
+    "scripts": ["scripts.js"],
+    "persistent": false
+  },
   "options_page": "options.html",
   "web_accessible_resources": ["eng.json"]
 }
