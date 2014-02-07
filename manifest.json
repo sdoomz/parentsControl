@@ -27,5 +27,5 @@
     "persistent": false
   },
   "options_page": "options.html",
-  "web_accessible_resources": ["eng.json"]
+  "web_accessible_resources": ["words.json"]
 }

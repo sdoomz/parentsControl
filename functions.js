@@ -1,10 +1,10 @@
 (function() {
-	var jsonWorker = {};
-	localStorage.$webCensor_words = localStorage.$webCensor_words || "";
-	localStorage.$webCensor_language = localStorage.$webCensor_language || "eng";
+	var jsonWorker = {};	
+	localStorage.$webCensor_language = localStorage.$webCensor_language || "eng";	
+	localStorage.$webCensor_words = localStorage.$webCensor_words || "";	
 	localStorage.$webCensor_userWords = localStorage.$webCensor_userWords || "";
 	
-	chrome.runtime.sendMessage({type: "getLocal"}, function(response) {	  
+	chrome.runtime.sendMessage({type: "getLocal"}, function(response) {	
 	  for(var element in response){ 
 	  	localStorage["$webCensor_"+element] = response[element];
 	  }
@@ -17,35 +17,20 @@
 			for(var element in request.data){ 
 			  	localStorage["$webCensor_"+element] = request.data[element];
 			}
+			jsonWorker.sendRequest();
 		}
 	    
 	}
 
-	jsonWorker.getXmlHttp = function() { 
-		var xmlhttp;
-		try {
-		    xmlhttp = new ActiveXObject("Msxml2.XMLHTTP");
-		} catch (e) {
-			try {
-			    xmlhttp = new ActiveXObject("Microsoft.XMLHTTP");
-			} catch (E) {
-			    xmlhttp = false;
-			}
-		}
-		if (!xmlhttp && typeof XMLHttpRequest!='undefined') {
-		   xmlhttp = new XMLHttpRequest();
-		}
-		return xmlhttp;
-	};	
 
 	jsonWorker.sendRequest = function() { 
-		var xmlhttp = jsonWorker.getXmlHttp();	
-		xmlhttp.open('GET', chrome.extension.getURL(localStorage.$webCensor_language+'.json'), true);
+		var xmlhttp = new XMLHttpRequest();
+		xmlhttp.open('GET', chrome.extension.getURL('words.json'), true);
 		xmlhttp.onreadystatechange = function() {
 		  if (xmlhttp.readyState == 4) {
 		    if(xmlhttp.status == 200) {
 		    	var data = JSON.parse(xmlhttp.responseText);    			    	
-		    	localStorage.$webCensor_words = data.words.join("|");	    	
+		    	localStorage.$webCensor_words = data[localStorage.$webCensor_language].join("|");	    	
 		    	changeWords(); 
 		    }
 		  }
@@ -53,7 +38,7 @@
 		xmlhttp.send(null);
 	};
 	
-	if(typeof localStorage.$webCensor_words == 'string' && localStorage.$webCensor_words != '') {
+	if(localStorage.$webCensor_words != '') {
 		changeWords();
 	} else {
 		jsonWorker.sendRequest();
@@ -61,7 +46,7 @@
 
 	function changeWords() {
 		var badWords = (localStorage.$webCensor_userWords != "") ? localStorage.$webCensor_words+"|"+localStorage.$webCensor_userWords : localStorage.$webCensor_words;		
-		console.log(badWords);
+		//console.log(badWords);
 		var regExp = new RegExp('\\b('+badWords+')\\b', "gi");  
 		var walker = document.createTreeWalker(
 		    document.body, 
@@ -76,17 +61,16 @@
 		}		
 	}
 	
-	window.addEventListener('DOMContentLoaded', addDomListener, false );
+	document.addEventListener("DOMSubtreeModified", refreshDomAjax, false);
 
-	function addDomListener() { 		
-		document.addEventListener("DOMSubtreeModified", function(e) {
-			var badWords = (localStorage.$webCensor_userWords != "") ? localStorage.$webCensor_words+"|"+localStorage.$webCensor_userWords : localStorage.$webCensor_words;	
-			var regExp = new RegExp('\\b('+badWords+')\\b', "gi");		
-		 	
-		 	if(typeof e.target.innerText != "undefined" && (e.target.childElementCount == 0 || e.target.nodeType  == 3) ) {
-		    	e.target.innerText = e.target.innerText.replace(regExp, '****');
-		  	}
-		}, false);		
-	
+	var busy = false; 
+	function refreshDomAjax(e) {
+		if(!busy)  {
+			setTimeout(function() { 
+				changeWords();
+				busy = false;
+			}, 700);
+		}
+		busy = true;
 	}
 })();
