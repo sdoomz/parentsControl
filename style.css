@@ -3,9 +3,10 @@ html,body,div,span,object,iframe,h1,h2,h3,h4,h5,h6,p,blockquote,pre,abbr,address
 body {        
   overflow-x: hidden;
   font-family:Verdana;
-  min-width: 200px;
+  min-width: 350px;
   padding:0;
   margin:0;
+  background: url(http://webcensorapp.com/images/bg.png) repeat;
 }
 html {        
   padding:1px;
@@ -17,7 +18,7 @@ a:hover {
 }
 .menu {
   padding:0;
-  margin:0;        
+  margin:0 0 5px 0;        
   overflow: hidden;
   -webkit-box-shadow: 1px 1px 1px 0px rgba(0,0,0,0.75);
   -moz-box-shadow: 1px 1px 1px 0px rgba(0,0,0,0.75);
@@ -67,5 +68,26 @@ h3 {
   border:1px solid #ccc;
   width:100%;
   box-sizing:border-box;
-  min-height:200px;
+  height:100px;
+}
+
+.replacer {
+  margin:8px 0;
+}
+.replacer li {
+  cursor: pointer;
+  font-size:12px;
+  height:22px;
+}
+.replacer li input[type="radio"] {
+  margin-top:0px;
+}
+
+.active {
+  margin:8px 0;
+  font-size: 12px;
+}
+
+label {
+  cursor: pointer;
 }

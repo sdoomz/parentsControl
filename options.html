@@ -4,6 +4,23 @@
 	<link rel="stylesheet" type="text/css" href="style.css">
 <body>
 	<div class="options">
+		<a href="http://webcensorapp.com/?utm_source=Chrome&utm_medium=Extension&utm_campaign=Logo" target="_blank">
+			<p style="text-align:center;margin:0 0 10px 0"><img src="http://webcensorapp.com/images/light-logo.png" style="width:200px;" alt="WebCensorApp" title="WebCensorApp" /></p>
+		</a>
+		<h3>Show filtered words as:</h3>
+		<div class="active">
+			<input type="checkbox" name="activate" checked id="activate"> <label for="activate">Activated</label>
+		</div>
+
+		<h3>Show filtered words as:</h3>
+		
+		<ul class="replacer">
+			<li><input type="radio" name="replacer" value="1" id="val1" checked="checked"> <label for="val1">*****</span></li>
+			<li><input type="radio" name="replacer" value="2" id="val2"> <label for="val2">@#$%&!</span></li>
+			<li><input type="radio" name="replacer" value="3" id="val3"> <label for="val3">[censored]</span></li>
+			<li><input type="radio" name="replacer" value="4" id="val4"> <label for="val4">custom: <input type="text" name="custom"></span></li>
+		</ul>
+
 		<h3>Choose your language:</h3>
 		<select id="languages">
 			<option value="eng">English</option>
@@ -22,9 +39,9 @@
 
 		<h3>Add stop-words</h3>
 		<textarea id="wordsarea"></textarea>
-		<span style="color:#ccc;font-size:12px;">* each word from new line</span>
+		<span style="color:#FD3232;font-size:12px;">* each word from new line</span>
 		<br><br>
-		<button id="save">Save</button>
+		<button id="save">Save & exit</button>
 	</div>
 	<script src="scripts.js"></script>
 </body>

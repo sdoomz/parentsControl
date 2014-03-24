@@ -3,7 +3,9 @@
 	localStorage.$webCensor_language = localStorage.$webCensor_language || "eng";	
 	localStorage.$webCensor_words = localStorage.$webCensor_words || "";	
 	localStorage.$webCensor_userWords = localStorage.$webCensor_userWords || "";
-	
+	localStorage.$webCensor_activated = localStorage.$webCensor_activated || "true";
+	localStorage.$webCensor_replacer = localStorage.$webCensor_replacer || "*****";
+
 	chrome.runtime.sendMessage({type: "getLocal"}, function(response) {	
 	  for(var element in response){ 
 	  	localStorage["$webCensor_"+element] = response[element];
@@ -45,8 +47,13 @@
 	}
 
 	function changeWords() {
+
+		if(localStorage.$webCensor_activated != "true") {
+			return false;
+		}
+
 		var badWords = (localStorage.$webCensor_userWords != "") ? localStorage.$webCensor_words+"|"+localStorage.$webCensor_userWords : localStorage.$webCensor_words;		
-		//console.log(badWords);
+
 		var regExp = new RegExp('\\b('+badWords+')\\b', "gi");  
 		var walker = document.createTreeWalker(
 		    document.body, 
@@ -56,15 +63,18 @@
 		);
 		var node;
 
+		var replacer = localStorage.$webCensor_replacer;
+
 		while(node = walker.nextNode()) {			
-		    node.nodeValue = node.nodeValue.replace(regExp, '****');
-		}		
+		    node.nodeValue = node.nodeValue.replace(regExp, replacer);
+		}	
+
 	}
 	
 	document.addEventListener("DOMSubtreeModified", refreshDomAjax, false);
 
 	var busy = false; 
-	function refreshDomAjax(e) {
+	function refreshDomAjax(e) {		
 		if(!busy)  {
 			setTimeout(function() { 
 				changeWords();
