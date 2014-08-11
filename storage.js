@@ -1,8 +1,10 @@
-function _$WebCensorStorageMgr(options) {
+function StorageMgr(options) {
+	console.log('StorageMgr was created succesfully for store - ', options.name);
+	
 	this.name = options.name;
 }
 
-_$WebCensorStorageMgr.prototype = {	
+StorageMgr.prototype = {	
 	getSettings: function() {
 		var obj = localStorage.getItem(this.name);
 					

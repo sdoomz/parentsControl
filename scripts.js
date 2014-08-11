@@ -6,13 +6,18 @@ chrome.runtime.onMessage.addListener(
 
 (function() {
 	var name = '_wcoptions';
+
+	var extension = {
+
+	};
+	
 	var replacer = {
 		1 : '*****',
 		2 : '@#$%&!',
 		3 : '[censored]'
 	};
 
-	var storage = new _$WebCensorStorageMgr({
+	var storage = new StorageMgr({
 		name: name
 	});
 
