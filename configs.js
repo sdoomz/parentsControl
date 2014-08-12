@@ -1,1 +1,1 @@
-var config = {};
+var config = {	};

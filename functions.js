@@ -61,7 +61,8 @@
 		optionsUpdateCallback: function(request, sender, sendResponse) {
 			if (request.type == 'update') {	
 				var storage = this.storage;
-				console.log('reguest response', request.data, storage);
+				
+				console.log('reguest response', request.data, storage);				
 				storage.setValue(request.data)
 
 				if (storage.getValue('words') == null || (storage.getValue('language') != request.data.language)) {

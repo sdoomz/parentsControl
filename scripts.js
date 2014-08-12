@@ -5,117 +5,139 @@ chrome.runtime.onMessage.addListener(
 });
 
 (function() {
-	var name = '_wcoptions';
 
-	var extension = {
+	var Ext = {
+		storage  : new StorageMgr({name: '_wcoptions'}),
+		options :{
+			language         : 'eng',
+			userWords        : '',
+			replacer         : '*****',
+			replacerPosition : 1,
+			customReplacer   : '',
+			safeWords	     : '',
+			active           : true
+		},
 
-	};
-	
-	var replacer = {
-		1 : '*****',
-		2 : '@#$%&!',
-		3 : '[censored]'
-	};
+		replacer: {
+			1 : '*****',
+			2 : '@#$%&!',
+			3 : '[censored]'
+		}, 
 
-	var storage = new StorageMgr({
-		name: name
-	});
+		elements: {
+			saveBtn 	  : document.getElementById('save'),
+			stopWordsArea : document.getElementById('stop-wordsarea'),
+			safeWordsArea : document.getElementById('safe-wordsarea'),
+			langs 	 	  : document.getElementById('languages')
+		},
 
-	var defStore = storage.getSettings();
-	var defaults = {
-		language         : defStore.language         || 'eng',
-		userWords        : defStore.userWords        || '',
-		replacer         : defStore.replacer         || '*****',
-		replacerPosition : defStore.replacerPosition || 1,
-		customReplacer   : defStore.customReplacer   || '',
-		safeWords	     : defStore.safeWords 		 || '',
-		active           : (defStore.hasOwnProperty('active') && defStore.active != null) ? defStore.active : true
-	};
+		getReplacerArr: function() {
+			return document.getElementsByName('replacer') || null;
+		},
 
-	storage.saveSettings(defaults);
+		setActiveByDefault: function() {
+			var activate = document.getElementsByName('activate')[0];
 
-	var replacerArr = document.getElementsByName('replacer');
+			activate.checked = (this.storage.getValue('active') == true) ? true : false;
+		},
 
-	for(var i = 0, len = replacerArr.length; i < len; i++){
-		replacerArr[i].checked = false;
-	}
+		setReplacerByDefault: function() {
+			var field = document.getElementById('val'+this.options.replacerPosition);
+			
+			if (field)
+				field.checked = true;
+			else 
+				this.getReplacerArr()[0].checked = true;			
+		},
 
-	var checkedInp = document.getElementById('val'+defaults.replacerPosition);
-	var customStr = document.getElementsByName('custom')[0].value = defaults.customReplacer;
+		init: function() {
+			var st       = this.storage;
+			var el 	     = this.elements;
+			var defStore = this.storage.getSettings();
+			var defaults = this.options;
 
-	if(checkedInp){
-		checkedInp.checked = true;
-	} else {
-		replacerArr[0].checked = true;
-	}
+			for (var prop in defaults) {
+				
+				if (prop in defStore) defaults[prop] = defStore[prop];				
+			
+			}
 
-	document.getElementsByName('activate')[0].checked = (storage.getValue('active') == true) ? true : false;
+			st.saveSettings(defaults);
 
-	var send     	  = document.getElementById('save');	
-	var stopWordsArea = document.getElementById('stop-wordsarea');
-	var safeWordsArea = document.getElementById('safe-wordsarea');
-	var select    	  = document.getElementById('languages');
+			var replacerArr = this.getReplacerArr();
+			
+			for(var i = 0, len = replacerArr.length; i < len; i++){
+				replacerArr[i].checked = false;
+			}
 
-	send.addEventListener('click', updateLocalData, false);
-	stopWordsArea.value = defaults.userWords.split('|').join('\n');
-	safeWordsArea.value = defaults.safeWords.split('|').join('\n');
+			this.setReplacerByDefault();
+			this.setActiveByDefault();
 
-	for (var i = 0, len = select.options.length; i < len; i++) {
-
-		if (select.options[i].value == storage.getValue('language')) { 
-			select.options[i].setAttribute('selected', 'selected');
-		}
-	
-	}
-
-	function updateLocalData () {	
-		var stopWords = stopWordsArea.value.trim().replace(/(\r\n|\n|\r)/gm, '|');
-			safeWords = safeWordsArea.value.trim().replace(/(\r\n|\n|\r)/gm, '|');
-
-		var e = document.getElementById('languages');
-		var language = e.options[e.selectedIndex].value;
-		var replacerArr = document.getElementsByName('replacer');
-		var i = 0;
-
-		while(!replacerArr[i].checked){
-			i++;
-		}
-	
-		var checked = replacerArr[i];
-		var customReplacer = document.getElementsByName('custom')[0].value;
-		var active = document.getElementsByName('activate')[0].checked;			
-
-		if (checked.value == 4 && customReplacer != '' && typeof customReplacer != 'undefined') {
-			storage.setValue('replacer', customReplacer);
-			storage.setValue('customReplacer', customReplacer);	
-		}
-		else {
-			storage.setValue('replacer', (replacer[checked.value] || replacer[1]));	
-		}
+			el.saveBtn.addEventListener('click', this.updateLocalData.bind(this), false);
 		
-		storage.setValue({
-			active 			 : active, 
-			replacerPosition : checked.value || 1,
-			language 		 : language,
-			userWords	     : stopWords,
-			safeWords 		 : safeWords
-		});
+			el.stopWordsArea.value = defaults.userWords.split('|').join('\n');
+			el.value = defaults.safeWords.split('|').join('\n');
 
-		var localData = storage.getSettings();		
+			for (var i = 0, len = el.langs.options.length; i < len; i++) {
 
-		chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
-			  chrome.tabs.sendMessage(tabs[0].id, {
-			  		type: 'update', 
-			  		data:{
-			  			language  : localData.language,
-			  			userWords : localData.userWords,
-			  			replacer  : localData.replacer,
-			  			active    : localData.active,
-			  			safeWords : safeWords,		  			
-			  		}
-			  }, function() {
-			  		window.close();
-			  });
-		});		
-	}
+				if (el.langs.options[i].value == st.getValue('language'))
+					el.langs.options[i].setAttribute('selected', 'selected');				
+			}
+		},
+
+		updateLocalData: function() {
+			var el 			= this.elements;
+			var stopWords   = el.stopWordsArea.value.trim().replace(/(\r\n|\n|\r)/gm, '|');
+			var safeWords   = el.safeWordsArea.value.trim().replace(/(\r\n|\n|\r)/gm, '|');			
+			var language    = el.langs.options[el.langs.selectedIndex].value;
+			var replacerArr = this.getReplacerArr();
+			var i = 0;
+
+			while (!replacerArr[i].checked)
+				i++;
+	
+			var checked = replacerArr[i];
+			var customReplacer = document.getElementsByName('custom')[0].value;
+			var active = document.getElementsByName('activate')[0].checked;			
+
+			if (checked.value == 4 && customReplacer != '' && typeof customReplacer != 'undefined') {
+				this.storage.setValue('replacer', customReplacer);
+				this.storage.setValue('customReplacer', customReplacer);	
+			}
+			else {
+				this.storage.setValue('replacer', (this.replacer[checked.value] || this.replacer[1]));	
+			}
+			
+			this.storage.setValue({
+				active 			 : active, 
+				replacerPosition : checked.value || 1,
+				language 		 : language,
+				userWords	     : stopWords,
+				safeWords 		 : safeWords
+			});
+
+			this.sendData();
+		},
+
+		sendData: function() {
+			var data = this.storage.getSettings();		
+
+			chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
+				  chrome.tabs.sendMessage(tabs[0].id, {
+				  		type: 'update', 
+				  		data:{
+				  			language  : data.language,
+				  			userWords : data.userWords,
+				  			replacer  : data.replacer,
+				  			active    : data.active,
+				  			safeWords : data.safeWords,		  			
+				  		}
+				  }, function() {
+				  		window.close();
+				  });
+			});		
+		}
+	};
+
+	Ext.init();	
 })();
