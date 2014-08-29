@@ -1,19 +1,23 @@
-chrome.runtime.onMessage.addListener(
-  function(request, sender, sendResponse) {
-    if (request.type == 'getLocal')
-     	sendResponse(localStorage.getItem('_wcoptions'));
-});
+(function() {	
+	chrome.runtime.onMessage.addListener(
+	  function(request, sender, callback) {
+	    if (request.type == 'getDefault') { 	
+	    	//callback.call(callback, 'prestart');
+	    	callback.call(callback, 'prestart3', Ext);
 
-(function() {
-
+	    	Ext.getLocalWordsList(null, callback);
+		}			
+	});
+	
 	var Ext = {
 		storage  : new StorageMgr({name: '_wcoptions'}),
 		options :{
-			language         : 'eng',
-			userWords        : '',
+			language         : 'eng',			
 			replacer         : '*****',
 			replacerPosition : 1,
 			customReplacer   : '',
+			localWords 		 : '',
+			userWords        : '',
 			safeWords	     : '',
 			active           : true
 		},
@@ -35,6 +39,39 @@ chrome.runtime.onMessage.addListener(
 			return document.getElementsByName('replacer') || null;
 		},
 
+		getLocalWordsList: function(lang, callback) {		
+			var xmlhttp = new XMLHttpRequest();
+			var language = lang || this.storage.getValue('language') || options.lang;
+			var me = this;
+
+			xmlhttp.open('GET', chrome.extension.getURL('words.json'), true);
+			
+			console.log('callback here', callback);
+			callback.call(null, 'start');
+
+			xmlhttp.onreadystatechange = function() {
+				if (xmlhttp.readyState == 4 && xmlhttp.status == 200) {
+		    		var data = JSON.parse(xmlhttp.responseText); 		    	
+		    		var list = data[language].join('|');
+		    		var userWords = me.storage.getValue('userWords');
+		    		var newStr = userWords.length ? userWords + '|' + list : list;
+
+		    		me.storage.setValue('userWords', newStr);	    		
+			  		
+			  		me.init();
+			  	}
+
+				if (typeof callback === 'function')
+					callback();
+				
+				callback.call(callback, 'event');	
+			}
+
+			callback.call(callback, 'end');
+
+			xmlhttp.send(null);
+		},
+		
 		setActiveByDefault: function() {
 			var activate = document.getElementsByName('activate')[0];
 
@@ -51,18 +88,18 @@ chrome.runtime.onMessage.addListener(
 		},
 
 		init: function() {
-			var st       = this.storage;
-			var el 	     = this.elements;
-			var defStore = this.storage.getSettings();
-			var defaults = this.options;
+			var st, el, defStore, options;	
 
-			for (var prop in defaults) {
-				
-				if (prop in defStore) defaults[prop] = defStore[prop];				
-			
+			st       = this.storage;
+			el 	     = this.elements;
+			defStore = this.storage.getSettings();
+			options  = this.options;			
+
+			for (var prop in options) {				
+				if (prop in defStore) options[prop] = defStore[prop];			
 			}
 
-			st.saveSettings(defaults);
+			st.saveSettings(options);
 
 			var replacerArr = this.getReplacerArr();
 			
@@ -75,14 +112,16 @@ chrome.runtime.onMessage.addListener(
 
 			el.saveBtn.addEventListener('click', this.updateLocalData.bind(this), false);
 		
-			el.stopWordsArea.value = defaults.userWords.split('|').join('\n');
-			el.value = defaults.safeWords.split('|').join('\n');
+			el.stopWordsArea.value = options.userWords.split('|').join('\n');
+			el.value = options.safeWords.split('|').join('\n');
 
 			for (var i = 0, len = el.langs.options.length; i < len; i++) {
 
 				if (el.langs.options[i].value == st.getValue('language'))
 					el.langs.options[i].setAttribute('selected', 'selected');				
 			}
+
+			this.getLocalWordsList();
 		},
 
 		updateLocalData: function() {
@@ -119,8 +158,8 @@ chrome.runtime.onMessage.addListener(
 			this.sendData();
 		},
 
-		sendData: function() {
-			var data = this.storage.getSettings();		
+		sendData: function() {			
+			var data  = this.storage.getSettings();					
 
 			chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
 				  chrome.tabs.sendMessage(tabs[0].id, {
@@ -137,7 +176,6 @@ chrome.runtime.onMessage.addListener(
 				  });
 			});		
 		}
-	};
+	};	
 
-	Ext.init();	
 })();

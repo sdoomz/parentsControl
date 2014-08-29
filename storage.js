@@ -1,6 +1,4 @@
 function StorageMgr(options) {
-	console.log('StorageMgr was created succesfully for store - ', options.name);
-	
 	this.name = options.name;
 }
 
