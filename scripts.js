@@ -1,167 +1,129 @@
 (function() {
-	// chrome.runtime.onMessage.addListener(
-	// 	function(request, sender, callback) {
-	// 		if (request.type == 'getDefault') {
-	// 			callback(Ext.getOptions);
-	// 	  }
-	// 	}
-	// );
+    var Ext = {
 
-	// chrome.tabs.query({
- //    active: true,
- //    currentWindow: true
- //  }, function(tabs) {
- //    chrome.tabs.sendMessage(tabs[0].id, {
- //      type: 'update',
- //      test: 'data'
- //    }, function() {
- //      window.close();
- //    });
- //  });
+        elements: {
+            saveBtn       : document.getElementById('save'),
+            stopWordsArea : document.getElementById('stop-wordsarea'),
+            safeWordsArea : document.getElementById('safe-wordsarea'),
+            langs         : document.getElementById('languages'),
+            replacers     : document.getElementsByName('replacer'),
+            isactive      : document.getElementById('isactive')
+        },
 
-  var Ext = {
-    storage: new StorageMgr({
-      name: '_wcoptions'
-    }),
+        settings: null,
 
-    options: {
-      language: 'eng',
-      replacer: '*****',
-      replacerPosition: 1,
-      customReplacer: '',
-      localWords: '',
-      userWords: '',
-      safeWords: '',
-      active: true
-    },
+        setActiveByDefault: function() {
+            var activate = this.elements.isactive;
 
-    test: function() {
-    	return 'ffff'
-    },
+            activate.checked = (this.settings.active == true) ? true : false;
+        },
 
-    replacer: {
-      1: '*****',
-      2: '@#$%&!',
-      3: '[censored]'
-    },
+        _uncheckAllReplacers: function() {
+            var replacers = this.elements.replacers;
 
-    elements: {
-      saveBtn: document.getElementById('save'),
-      stopWordsArea: document.getElementById('stop-wordsarea'),
-      safeWordsArea: document.getElementById('safe-wordsarea'),
-      langs: document.getElementById('languages')
-    },
+            for (var i = 0, len = replacers.length; i < len; i++) {
+                replacers[i].checked = false;
+            }
+        },
 
-    getReplacerArr: function() {
-      return document.getElementsByName('replacer') || null;
-    },
+        _getCheckedReplacer: function() {
+            var replacers = this.elements.replacers;
 
-    publishOptions: function() {
-    	var options = this.storage.getSettings();
-    	console.log('options here', options);
+            for (var i = replacers.length - 1; i >= 0; i--) {
+                if (replacers[i].checked) return replacers[i];
+            };
 
-    	// chrome.tabs.query({
-	    //   active: true,
-	    //   currentWindow: true
-	    // }, function(tabs) {
-		   //    chrome.tabs.sendMessage(tabs[0].id, options);
-	    // });
+            return null;
+        },
 
-	    chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
-				  chrome.tabs.sendMessage(tabs[0].id, {
-				  		type: 'update', 
-				  		data:options
-			});	
-			});	  
-    },
+        setReplacerByDefault: function() {
+            var field = document.getElementById('val' + this.settings.replacer);
+            this._uncheckAllReplacers();
 
-    setActiveByDefault: function() {
-      var activate = document.getElementsByName('activate')[0];
+            if (field) {
+                field.checked = true;
+            } else {
+                this.elements.replacers[0].checked = true;
+            }
+        },
 
-      activate.checked = (this.storage.getValue('active') == true) ? true : false;
-    },
+        validateTextArea: function(text) {
+            var text = text.replace(/\s*[\r\n]+\s*/g, '\n').replace(/^\s+|\s+$/g, '');
 
-    setReplacerByDefault: function() {
-      var field = document.getElementById('val' + this.options.replacerPosition);
+            return text.length ? text.split('\n') : [];
+        },
 
-      if (field)
-        field.checked = true;
-      else
-        this.getReplacerArr()[0].checked = true;
-    },
+        updateLocalData: function() {
+            var elements = this.elements;
+            var settings = this.settings;
+            var checkedReplacer = this._getCheckedReplacer();
 
-    init: function() {
-      var st, el, defStore, options;
+            var exports = {
+                userWords: this.validateTextArea(elements.stopWordsArea.value),
+                safeWords: this.validateTextArea(elements.safeWordsArea.value),
+                language: elements.langs.options[elements.langs.selectedIndex].value,
+                active: document.getElementsByName('isactive')[0].checked,
+                replacer: checkedReplacer.value,
+                customReplacer: document.getElementsByName('custom')[0].value
+            };
 
-      st = this.storage;
-      el = this.elements;
-      defStore = this.storage.getSettings();
-      options = this.options;
+            for (var prop in exports) {
+                if (settings.hasOwnProperty(prop)) {
+                    settings[prop] = exports[prop];
+                }
+            }
 
-      for (var prop in options) {
-        if (prop in defStore) options[prop] = defStore[prop];
-      }
+            this.sendData(settings);
+        },
 
-      st.saveSettings(options);
+        sendData: function(settings) {
+            var settings = settings || this.settings;
 
-      var replacerArr = this.getReplacerArr();
+            chrome.storage.local.set({
+                'settings': settings
+            }, function(response) {
+                window.close()
+            });
 
-      for (var i = 0, len = replacerArr.length; i < len; i++) {
-        replacerArr[i].checked = false;
-      }
+            chrome.tabs.query({
+                active: true,
+                currentWindow: true
+            }, function(tabs) {
+                chrome.tabs.sendMessage(tabs[0].id, {
+                    type: 'update'
+                });
+            });
+        },
 
-      this.setReplacerByDefault();
-      this.setActiveByDefault();
+        init: function() {
+            var settings = this.settings;
+            var elements = this.elements;
 
-      el.saveBtn.addEventListener('click', this.updateLocalData.bind(this), false);
+            this.setReplacerByDefault();
+            this.setActiveByDefault();
 
-      el.stopWordsArea.value = options.userWords.split('|').join('\n');
-      el.value = options.safeWords.split('|').join('\n');
+            elements.saveBtn.addEventListener('click', this.updateLocalData.bind(this), false);
 
-      for (var i = 0, len = el.langs.options.length; i < len; i++) {
+            elements.stopWordsArea.value = settings.userWords.join('\n');
+            elements.safeWordsArea.value = settings.safeWords.join('\n');
 
-        if (el.langs.options[i].value == st.getValue('language'))
-          el.langs.options[i].setAttribute('selected', 'selected');
-      }
+            for (var i = 0, len = elements.langs.options.length; i < len; i++) {
+                if (elements.langs.options[i].value == settings.language) {
+                    elements.langs.options[i].setAttribute('selected', 'selected');
+                }
+            }
+        },
 
-      this.getLocalWordsList();
-    },
+        getSettings: function() {
+            var me = this;
 
-    updateLocalData: function() {
-      var el = this.elements;
-      var stopWords = el.stopWordsArea.value.trim().replace(/(\r\n|\n|\r)/gm, '|');
-      var safeWords = el.safeWordsArea.value.trim().replace(/(\r\n|\n|\r)/gm, '|');
-      var language = el.langs.options[el.langs.selectedIndex].value;
-      var replacerArr = this.getReplacerArr();
-      var i = 0;
+            chrome.storage.local.get('settings', function(response) {
+                me.settings = response.settings;
+                me.init();
+            });
+        }
+    };
 
-      while (!replacerArr[i].checked)
-        i++;
-
-      var checked = replacerArr[i];
-      var customReplacer = document.getElementsByName('custom')[0].value;
-      var active = document.getElementsByName('activate')[0].checked;
-
-      if (checked.value == 4 && customReplacer != '' && typeof customReplacer != 'undefined') {
-        this.storage.setValue('replacer', customReplacer);
-        this.storage.setValue('customReplacer', customReplacer);
-      }
-      else {
-        this.storage.setValue('replacer', (this.replacer[checked.value] || this.replacer[1]));
-      }
-
-      this.storage.setValue({
-        active: active,
-        replacerPosition: checked.value || 1,
-        language: language,
-        userWords: stopWords,
-        safeWords: safeWords
-      });
-
-      this.publishOptions();
-    }
-  };
-	
-	Ext.init();
+    Ext.getSettings();
 
 })();
