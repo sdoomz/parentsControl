@@ -7,9 +7,9 @@
 		<a href="http://webcensorapp.com/?utm_source=Chrome&utm_medium=Extension&utm_campaign=Logo" target="_blank">
 			<p style="text-align:center;margin:0 0 10px 0"><img src="http://webcensorapp.com/images/light-logo.png" style="width:200px;" alt="WebCensorApp" title="WebCensorApp" /></p>
 		</a>
-		<h3>Show filtered words as:</h3>
+		<h3>Activate:</h3>
 		<div class="active">
-			<input type="checkbox" name="activate" checked id="activate"> <label for="activate">Activated</label>
+			<input type="checkbox" name="isactive" checked id="isactive"> <label for="isactive">Activated</label>
 		</div>
 
 		<h3>Show filtered words as:</h3>
@@ -38,11 +38,18 @@
 		</select>
 
 		<h3>Add stop-words</h3>
-		<textarea id="wordsarea"></textarea>
-		<span style="color:#FD3232;font-size:12px;">* each word from new line</span>
+		<textarea class="wordsarea" id="stop-wordsarea"></textarea>
+		<span style="color:#FD3232;font-size:12px;">*each word (or phrase) from new line</span>
 		<br><br>
+
+		<h3>Add safe-words</h3>
+		<textarea class="wordsarea" id="safe-wordsarea"></textarea>
+		<span style="color:#FD3232;font-size:12px;">*each word (or phrase) from new line</span>
+		<br><br>
+		
 		<button id="save">Save & exit</button>
 	</div>
+	<script src="storage.js"></script>
 	<script src="scripts.js"></script>
 </body>
 </html>

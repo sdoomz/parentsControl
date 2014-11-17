@@ -1,9 +1,13 @@
 {
+"update_url": "https://clients2.google.com/service/update2/crx",
+
   "manifest_version": 2,
 
-  "name": "WebCensor",
-  "description": "This extension allow to block obscenities",
-  "version": "1.1",
+  "name": "WebCensor - Profanity Filter",
+  "short_name": "WebCensor",
+  "description": "Blocks the swear words, bad, strong, foul language, swearing, cursing, etc. Make browsing for kids safer and Internet cleaner!",
+  "version": "1.8",
+  "offline_enabled": true,
   "browser_action": {
     "default_icon": "icon16.png",
     "default_popup": "popup.html"

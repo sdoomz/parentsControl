@@ -1,98 +1,129 @@
-chrome.runtime.onMessage.addListener(
-  function(request, sender, sendResponse) {
-    if (request.type == "getLocal")
-      sendResponse(localStorage);
-});
-
 (function() {
-	localStorage.language = localStorage.language || "eng";
-	localStorage.userWords = localStorage.userWords || "";
-	localStorage.replacer = localStorage.replacer || "*****";
-	localStorage.replacerPosition = localStorage.replacerPosition || 1;
-	localStorage.customReplacer = localStorage.customReplacer || "";
-	localStorage.active = localStorage.active || "true";
+    var Ext = {
 
-	var replacerArr = document.getElementsByName('replacer');
+        elements: {
+            saveBtn       : document.getElementById('save'),
+            stopWordsArea : document.getElementById('stop-wordsarea'),
+            safeWordsArea : document.getElementById('safe-wordsarea'),
+            langs         : document.getElementById('languages'),
+            replacers     : document.getElementsByName('replacer'),
+            isactive      : document.getElementById('isactive')
+        },
 
-	for(var i = 0, len = replacerArr.length; i < len; i++){
-		replacerArr[i].checked = false;
-	}
+        settings: null,
 
-	var checkedInp = document.getElementById('val'+localStorage.replacerPosition);
-	var customStr = document.getElementsByName('custom')[0].value = localStorage.customReplacer;
+        setActiveByDefault: function() {
+            var activate = this.elements.isactive;
 
-	if(checkedInp){
-		checkedInp.checked = true;
-	} else {
-		replacerArr[0].checked = true;
-	}
+            activate.checked = (this.settings.active == true) ? true : false;
+        },
 
-	document.getElementsByName('activate')[0].checked = (localStorage.active == "true") ? true : false;
+        _uncheckAllReplacers: function() {
+            var replacers = this.elements.replacers;
 
+            for (var i = 0, len = replacers.length; i < len; i++) {
+                replacers[i].checked = false;
+            }
+        },
 
-	var send = document.getElementById("save");	
-	var textarea = document.getElementsByTagName("textarea")[0];
-	send.addEventListener("click", updateLocalData, false);
-	textarea.value = localStorage.userWords.split("|").join("\n");
+        _getCheckedReplacer: function() {
+            var replacers = this.elements.replacers;
 
-	var select = document.getElementById("languages");
+            for (var i = replacers.length - 1; i >= 0; i--) {
+                if (replacers[i].checked) return replacers[i];
+            };
 
-	for(var i = 0, len = select.options.length; i < len; i++){ 
-		if(select.options[i].value == localStorage.language) { 
-			select.options[i].setAttribute("selected", "selected");
-		}
-	}
+            return null;
+        },
 
-	function updateLocalData () {	
+        setReplacerByDefault: function() {
+            var field = document.getElementById('val' + this.settings.replacer);
+            this._uncheckAllReplacers();
 
-		var data = textarea.value.replace(/\s+/g, '|').replace(/^\|+|\|+$/g, '');
-		var e = document.getElementById("languages");
-		var language = e.options[e.selectedIndex].value;
+            if (field) {
+                field.checked = true;
+            } else {
+                this.elements.replacers[0].checked = true;
+            }
+        },
 
-		var replacerArr = document.getElementsByName('replacer');
-		var i = 0;
+        validateTextArea: function(text) {
+            var text = text.replace(/\s*[\r\n]+\s*/g, '\n').replace(/^\s+|\s+$/g, '');
 
-		while(!replacerArr[i].checked){
-			i++;
-		}
+            return text.length ? text.split('\n') : [];
+        },
 
-		
-		var checked = replacerArr[i];
-		var customReplacer = document.getElementsByName('custom')[0].value;
+        updateLocalData: function() {
+            var elements = this.elements;
+            var settings = this.settings;
+            var checkedReplacer = this._getCheckedReplacer();
 
-		var active = document.getElementsByName('activate')[0].checked;
-		localStorage.active = active;
+            var exports = {
+                userWords: this.validateTextArea(elements.stopWordsArea.value),
+                safeWords: this.validateTextArea(elements.safeWordsArea.value),
+                language: elements.langs.options[elements.langs.selectedIndex].value,
+                active: document.getElementsByName('isactive')[0].checked,
+                replacer: checkedReplacer.value,
+                customReplacer: document.getElementsByName('custom')[0].value
+            };
 
-		if(checked.value == 2) {
-			localStorage.replacer = "@#$%&!";
-		} else if(checked.value == 3){
-			localStorage.replacer = "[censored]";
-		} else if(checked.value == 4 && customReplacer != '' && typeof customReplacer != "undefined"){
-			localStorage.replacer = customReplacer;
-			localStorage.customReplacer = customReplacer;
-		} else {
-			localStorage.replacer = "*****";			
-		}
+            for (var prop in exports) {
+                if (settings.hasOwnProperty(prop)) {
+                    settings[prop] = exports[prop];
+                }
+            }
 
-		localStorage.replacerPosition = checked.value || 1;
+            this.sendData(settings);
+        },
 
-		localStorage.language = language;
-		localStorage.userWords = data;
-		chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
-		  chrome.tabs.sendMessage(tabs[0].id, {
-		  		type: "updateOptions", 
-		  		data:{
-		  			language:localStorage.language,
-		  			userWords:localStorage.userWords,
-		  			replacer:localStorage.replacer,
-		  			activated:localStorage.active
-		  		}
-		  });
-		});
+        sendData: function(settings) {
+            var settings = settings || this.settings;
 
-		window.close();
-	}
+            chrome.storage.local.set({
+                'settings': settings
+            }, function(response) {
+                window.close()
+            });
+
+            chrome.tabs.query({
+                active: true,
+                currentWindow: true
+            }, function(tabs) {
+                chrome.tabs.sendMessage(tabs[0].id, {
+                    type: 'update'
+                });
+            });
+        },
+
+        init: function() {
+            var settings = this.settings;
+            var elements = this.elements;
+
+            this.setReplacerByDefault();
+            this.setActiveByDefault();
+
+            elements.saveBtn.addEventListener('click', this.updateLocalData.bind(this), false);
+
+            elements.stopWordsArea.value = settings.userWords.join('\n');
+            elements.safeWordsArea.value = settings.safeWords.join('\n');
+
+            for (var i = 0, len = elements.langs.options.length; i < len; i++) {
+                if (elements.langs.options[i].value == settings.language) {
+                    elements.langs.options[i].setAttribute('selected', 'selected');
+                }
+            }
+        },
+
+        getSettings: function() {
+            var me = this;
+
+            chrome.storage.local.get('settings', function(response) {
+                me.settings = response.settings;
+                me.init();
+            });
+        }
+    };
+
+    Ext.getSettings();
+
 })();
-
-
-
