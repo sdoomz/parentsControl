@@ -81,7 +81,7 @@
                 node.nodeValue = node.nodeValue.replace(regExp, replacer);
             }
 
-            this.changeInputValues(regExp, replacer);
+            // this.changeInputValues(regExp, replacer);
         }, 300),
         
         changeInputValues: function(regExp, replacer) {         
